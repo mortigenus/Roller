@@ -24,9 +24,9 @@ Currently supported expressions:
 - Count Successes less or equal: 2d4cs<=2
 - Count Successes greater: 2d4cs>2
 - Count Successes greater or equal: 2d4cs>=3
+- Multiple rolls in one: 4d6kh1 + 1d4 - 1
 
 ## TODO:
-- Support expressions like 3d6+4
-- Support expressions like 3d6+2d10
 - Support critical success?
+- Support negative numbers
 - Refactor `roll()` method

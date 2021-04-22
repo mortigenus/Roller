@@ -24,33 +24,51 @@ import Prelude
 */
 
 public struct Roller {
-  public var rollRequest: RollRequest
-  public var dieGen: Gen<Roll>
+  public var rollExpression: RollExpression
+  public var dieGen: (Int) -> Gen<Roll>
 
-  public init(rollRequest: RollRequest, dieGen: Gen<Roll>? = nil) {
-    self.rollRequest = rollRequest
-    self.dieGen = dieGen ?? Gen
-      .int(in: 1...rollRequest.die)
-      .map { Roll(result: $0, die: rollRequest.die) }
+  public init(rollExpression: RollExpression, dieGen: ((Int) -> Gen<Roll>)? = nil) {
+    self.rollExpression = rollExpression
+    self.dieGen = dieGen ?? { die in
+      Gen.int(in: 1...die).map { Roll(result: $0, die: die) }
+    }
   }
 
-  public init?(_ string: String, dieGen: Gen<Roll>? = nil) {
-    let (request, rest) = RollRequest.parser().parse(string[...])
-    guard let rollRequest = request, rest.isEmpty else {
+  public init?(_ string: String, dieGen: ((Int) -> Gen<Roll>)? = nil) {
+    guard let rollExpression = RollExpression(string) else {
       return nil
     }
-
-    self.init(rollRequest: rollRequest, dieGen: dieGen)
+    self.init(rollExpression: rollExpression, dieGen: dieGen)
   }
 
-
-  public func roll(using rng: AnyRandomNumberGenerator? = nil) -> RollerResponse {
+  public func eval(using rng: AnyRandomNumberGenerator? = nil) -> RollerResponse {
     var rng = rng ?? AnyRandomNumberGenerator(SystemRandomNumberGenerator())
+    return self.eval(expression: self.rollExpression, rng: &rng)
+  }
 
-    var rolls = (1...rollRequest.amount).flatMap { _ -> [Roll] in
+  private func eval(expression: RollExpression, rng: inout AnyRandomNumberGenerator) -> RollerResponse {
+    switch expression {
+    case let .number(x):
+      return RollerResponse(rolls: [], result: x)
+    case let .roll(request):
+      return self.roll(request: request, using: &rng)
+    case let .add(expr1, expr2):
+      let resp1 = eval(expression: expr1, rng: &rng)
+      let resp2 = eval(expression: expr2, rng: &rng)
+      return RollerResponse(rolls: resp1.rolls + resp2.rolls, result: resp1.result + resp2.result)
+    case let .subtract(expr1, expr2):
+      let resp1 = eval(expression: expr1, rng: &rng)
+      let resp2 = eval(expression: expr2, rng: &rng)
+      return RollerResponse(rolls: resp1.rolls + resp2.rolls, result: resp1.result - resp2.result)
+    }
+  }
+
+  private func roll(request: RollRequest, using rng: inout AnyRandomNumberGenerator) -> RollerResponse {
+    var rolls = (1...request.amount).flatMap { _ -> [Roll] in
+      let dieGen = self.dieGen(request.die)
       let roll = dieGen.run(using: &rng)
 
-      if let reroll = rollRequest.rerollInstruction {
+      if let reroll = request.rerollInstruction {
         switch reroll {
         case .rerollEqualTo(let x):
           if roll.result == x { return [roll.discarded(), dieGen.run(using: &rng)] }
@@ -65,7 +83,7 @@ public struct Roller {
         }
       }
 
-      if let explode = rollRequest.explodeInstruction {
+      if let explode = request.explodeInstruction {
         switch explode {
         case .explodeEqualTo(let x):
           if roll.result == x {
@@ -123,7 +141,7 @@ public struct Roller {
       return [roll]
     }
 
-    if let extra = rollRequest.keepInstruction {
+    if let extra = request.keepInstruction {
       switch extra {
       case .keepHighest(let n):
         var filteredIndices = rolls.indices.filter { !rolls[$0].isDiscarded }
@@ -164,7 +182,7 @@ public struct Roller {
 
     let result: Int
     let nonDiscardedRolls = rolls.filter(not <<< \.isDiscarded)
-    if let action = rollRequest.countSuccessesInstruction {
+    if let action = request.countSuccessesInstruction {
       switch action {
       case .countSuccessesEqualTo(let x):
         result = nonDiscardedRolls.filter { $0.result == x }.count

@@ -38,7 +38,7 @@ struct RollDice: ParsableCommand {
   var input: String
 
   mutating func run() throws {
-    if let result = Roller(input)?.roll() {
+    if let result = Roller(input)?.eval() {
       print("\(String(reflecting: result))")
     } else {
       print("Something went wrong :sweatsmile:")

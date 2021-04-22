@@ -12,11 +12,6 @@ public struct RollerResponse: CustomDebugStringConvertible {
   public var result: Int
 
   public var debugDescription: String {
-    let summStr = rolls
-      .map {
-        $0.isDiscarded ? "!(\($0.result))" : String($0.result)
-      }
-      .joined(separator: " + ")
-    return summStr + " = \(result)"
+    return "result: \(result) rolls: \(rolls.map { $0.isDiscarded ? "!(\($0.result))" : "\($0.result)"} )"
   }
 }
