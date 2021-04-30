@@ -25,11 +25,15 @@ let package = Package(
         "Prelude",
         .product(name: "Optics", package: "Prelude"),
       ]),
+    .systemLibrary(
+      name: "Creadline"
+    ),
     .target(
       name: "RollerMain",
       dependencies: [
         "Roller",
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
+        "Creadline",
       ]),
     .testTarget(
       name: "RollerTests",

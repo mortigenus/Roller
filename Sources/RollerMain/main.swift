@@ -5,10 +5,12 @@
 //  Created by Ivan Chalov on 19.04.2021.
 //
 
+import Foundation
 import ArgumentParser
+import Creadline
 import Roller
 
-struct RollDice: ParsableCommand {
+struct RollerMain: ParsableCommand {
   static var configuration = CommandConfiguration(
     commandName: "roll"
   )
@@ -35,10 +37,27 @@ struct RollDice: ParsableCommand {
     Count Successes greater: 2d4cs>2
     Count Successes greater equal: 2d4cs>=3
   """)
-  var input: String
+  var input: String?
+
+  @Flag(name: .shortAndLong)
+  var interactive: Bool = false
 
   mutating func run() throws {
-    if let result = Roller(input)?.eval() {
+    if interactive {
+      while let input = readline("> ") {
+        let str = String(cString: input)
+        free(input)
+        add_history(str)
+        guard str != ":q" && str != "quit" else { return }
+        printRoll(str)
+      }
+    } else {
+      printRoll(input)
+    }
+  }
+
+  private func printRoll(_ string: String?) {
+    if let string = string, let result = Roller(string)?.eval() {
       print("\(String(reflecting: result))")
     } else {
       print("Something went wrong :sweatsmile:")
@@ -46,4 +65,4 @@ struct RollDice: ParsableCommand {
   }
 }
 
-RollDice.main()
+RollerMain.main()
