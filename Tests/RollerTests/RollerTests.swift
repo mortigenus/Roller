@@ -582,6 +582,72 @@ final class RollerTests: XCTestCase {
     XCTAssertEqual(result2.result, 13)
   }
 
+  func testMultiplicationRoll() throws {
+    let dieGen1 = TestRollGen.gen(source: [8: [4]])
+    let result1 = try XCTUnwrap(Roller("10 * 1d8", dieGen: dieGen1)).eval()
+
+    let dieGen2 = TestRollGen.gen(source: [8: [4]])
+    let result2 = try XCTUnwrap(Roller("1d8 * 10", dieGen: dieGen2)).eval()
+
+    let expectedRolls = [
+      Roll(result: 4, die: 8),
+    ]
+    let expectedResult = 40
+
+    XCTAssertEqual(result1.rolls, expectedRolls)
+    XCTAssertEqual(result1.result, expectedResult)
+
+    XCTAssertEqual(result2.rolls, expectedRolls)
+    XCTAssertEqual(result2.result, expectedResult)
+  }
+
+  func testOperatorPrecedenceRoll() throws {
+    let dieGen = TestRollGen.gen(source: [8: [4], 6: [2, 5]])
+    let result = try XCTUnwrap(Roller("1d8 + 7 - 2d6 * 3", dieGen: dieGen)).eval()
+
+    let expectedRolls = [
+      Roll(result: 4, die: 8),
+      Roll(result: 2, die: 6),
+      Roll(result: 5, die: 6),
+    ]
+    let expectedResult = -10
+
+    XCTAssertEqual(result.rolls, expectedRolls)
+    XCTAssertEqual(result.result, expectedResult)
+  }
+
+  func testOperatorPrecedenceWithParensRoll() throws {
+    let dieGen = TestRollGen.gen(source: [8: [4], 6: [2, 5]])
+    let result = try XCTUnwrap(Roller("1d8 + (7 - 2d6 + 3) * 3", dieGen: dieGen)).eval()
+
+    let expectedRolls = [
+      Roll(result: 4, die: 8),
+      Roll(result: 2, die: 6),
+      Roll(result: 5, die: 6),
+    ]
+    let expectedResult = 13
+
+    XCTAssertEqual(result.rolls, expectedRolls)
+    XCTAssertEqual(result.result, expectedResult)
+  }
+
+  func testOperatorPrecedenceWithNestedParensRoll() throws {
+    let dieGen = TestRollGen.gen(source: [12: [1, 9], 8: [4], 6: [2, 5]])
+    let result = try XCTUnwrap(Roller("1d12r1 * (1d8 + (7 - (2d6 + 3))) * 3", dieGen: dieGen)).eval()
+
+    let expectedRolls = [
+      Roll(result: 1, die: 12, isDiscarded: true),
+      Roll(result: 9, die: 12),
+      Roll(result: 4, die: 8),
+      Roll(result: 2, die: 6),
+      Roll(result: 5, die: 6),
+    ]
+    let expectedResult = 27
+
+    XCTAssertEqual(result.rolls, expectedRolls)
+    XCTAssertEqual(result.result, expectedResult)
+  }
+
   func testComplexRoll() throws {
     let dieGen = TestRollGen.gen(source: [6: [1, 4, 2, 6, 6, 2], 12: [4, 8, 9, 1]])
     let result = try XCTUnwrap(Roller("4d6kh2x6 - 3d12dl1r9 + 23", dieGen: dieGen)).eval()

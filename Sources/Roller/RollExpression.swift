@@ -12,6 +12,7 @@ public enum RollExpression {
   case roll(RollRequest)
   indirect case add(RollExpression, RollExpression)
   indirect case subtract(RollExpression, RollExpression)
+  indirect case multiply(RollExpression, RollExpression)
 
   public init?(_ string: String) {
     let (parsedTokens, rest) = tokensParser.parse(string[...].utf8)
@@ -30,12 +31,16 @@ public enum RollExpression {
     guard !tokens.isEmpty else { return nil }
     let token = tokens.removeFirst()
     switch token {
-    case .addition:
+    case .openParen, .closeParen: return nil //TODO: fix me, this should never happen :D
+    case .operation(.addition):
       guard let expr1 = create(&tokens), let expr2 = create(&tokens) else { return nil }
       return .add(expr1, expr2)
-    case .subtraction:
+    case .operation(.subtraction):
       guard let expr1 = create(&tokens), let expr2 = create(&tokens) else { return nil }
       return .subtract(expr1, expr2)
+    case .operation(.multiplication):
+      guard let expr1 = create(&tokens), let expr2 = create(&tokens) else { return nil }
+      return .multiply(expr1, expr2)
     case .number(let x):
       return .number(x)
     case .rollRequest(let request):
@@ -44,11 +49,18 @@ public enum RollExpression {
   }
 }
 
-private enum Token {
-  case number(Int)
-  case rollRequest(RollRequest)
+private enum Operation: Equatable {
   case addition
   case subtraction
+  case multiplication
+}
+
+private enum Token: Equatable {
+  case number(Int)
+  case rollRequest(RollRequest)
+  case operation(Operation)
+  case openParen
+  case closeParen
 }
 
 private let number = Skip(Whitespace<Substring.UTF8View>()).take(Int.parser()).skip(Whitespace())
@@ -57,8 +69,11 @@ private let symbol = { (symbol: String) in
   Skip(Whitespace<Substring.UTF8View>()).skip(StartsWith(symbol.utf8)).skip(Whitespace())
 }
 
-private let addition = symbol("+").map { Token.addition }.eraseToAnyParser()
-private let subtraction = symbol("-").map { Token.subtraction }.eraseToAnyParser()
+private let addition = symbol("+").map { Token.operation(.addition) }.eraseToAnyParser()
+private let subtraction = symbol("-").map { Token.operation(.subtraction) }.eraseToAnyParser()
+private let multiplication = symbol("*").map { Token.operation(.multiplication) }.eraseToAnyParser()
+private let openParen = symbol("(").map { Token.openParen }.eraseToAnyParser()
+private let closeParen = symbol(")").map { Token.closeParen }.eraseToAnyParser()
 private let roll = Skip(Whitespace<Substring.UTF8View>())
   .take(Parsers.SubstringToUTF8View(upstream: RollRequest.parser()))
   .skip(Whitespace())
@@ -67,11 +82,25 @@ private let roll = Skip(Whitespace<Substring.UTF8View>())
 private let tokenParser = OneOfMany([
   addition,
   subtraction,
+  multiplication,
+  openParen,
+  closeParen,
   roll,
   number,
 ])
 
 private let tokensParser = Many(tokenParser)
+
+private func precedence(_ op: Operation) -> Int {
+  switch op {
+  case .addition:
+    return 2
+  case .subtraction:
+    return 2
+  case .multiplication:
+    return 3
+  }
+}
 
 private func prefixNotation(_ tokens: [Token]) -> [Token] {
   var stack: [Token] = []
@@ -82,9 +111,21 @@ private func prefixNotation(_ tokens: [Token]) -> [Token] {
       stack.append(token)
     case .rollRequest(_):
       stack.append(token)
-    case .addition:
+    case let .operation(op):
+      while case let .operation(last) = stackOperators.last, precedence(op) < precedence(last) {
+        stack.append(stackOperators.removeLast())
+      }
       stackOperators.append(token)
-    case .subtraction:
+    case .openParen:
+      while stackOperators.last != .closeParen {
+        stack.append(stackOperators.removeLast())
+      }
+      if stackOperators.last != .closeParen {
+        // TODO errors
+        fatalError("wrong parens!")
+      }
+      stackOperators.removeLast()
+    case .closeParen:
       stackOperators.append(token)
     }
   }

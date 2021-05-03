@@ -60,6 +60,10 @@ public struct Roller {
       let resp1 = eval(expression: expr1, rng: &rng)
       let resp2 = eval(expression: expr2, rng: &rng)
       return RollerResponse(rolls: resp1.rolls + resp2.rolls, result: resp1.result - resp2.result)
+    case let .multiply(expr1, expr2):
+      let resp1 = eval(expression: expr1, rng: &rng)
+      let resp2 = eval(expression: expr2, rng: &rng)
+      return RollerResponse(rolls: resp1.rolls + resp2.rolls, result: resp1.result * resp2.result)
     }
   }
 

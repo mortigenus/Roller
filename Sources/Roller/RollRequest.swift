@@ -7,7 +7,7 @@
 
 import Parsing
 
-public struct RollRequest {
+public struct RollRequest: Equatable {
   public var amount: Int
   public var die: Int
 
@@ -16,7 +16,7 @@ public struct RollRequest {
   public var explodeInstruction: ExplodeInstruction?
   public var countSuccessesInstruction: CountSuccessesInstruction?
 
-  public enum KeepInstruction {
+  public enum KeepInstruction: Equatable {
     case keepHighest(Int)
     case keepLowest(Int)
     case dropHighest(Int)
@@ -32,7 +32,7 @@ public struct RollRequest {
     }
   }
 
-  public enum RerollInstruction {
+  public enum RerollInstruction: Equatable {
     case rerollEqualTo(Int)
     case rerollLessThan(Int)
     case rerollLessThanOrEqualTo(Int)
@@ -50,7 +50,7 @@ public struct RollRequest {
     }
   }
 
-  public enum ExplodeInstruction {
+  public enum ExplodeInstruction: Equatable {
     case explodeEqualTo(Int)
     case explodeLessThan(Int)
     case explodeLessThanOrEqualTo(Int)
@@ -68,7 +68,7 @@ public struct RollRequest {
     }
   }
 
-  public enum CountSuccessesInstruction {
+  public enum CountSuccessesInstruction: Equatable {
     case countSuccessesEqualTo(Int)
     case countSuccessesLessThan(Int)
     case countSuccessesLessThanOrEqualTo(Int)
