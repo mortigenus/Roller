@@ -80,13 +80,13 @@ private let roll = Skip(Whitespace<Substring.UTF8View>())
   .map(Token.rollRequest).eraseToAnyParser()
 
 private let tokenParser = OneOfMany([
+  roll,
+  number,
   addition,
   subtraction,
   multiplication,
   openParen,
   closeParen,
-  roll,
-  number,
 ])
 
 private let tokensParser = Many(tokenParser)

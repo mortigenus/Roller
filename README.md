@@ -28,5 +28,4 @@ Currently supported expressions:
 
 ## TODO:
 - Support critical success?
-- Support negative numbers
 - Refactor `roll()` method

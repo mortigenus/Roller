@@ -648,6 +648,20 @@ final class RollerTests: XCTestCase {
     XCTAssertEqual(result.result, expectedResult)
   }
 
+  func testNegativeNumbersRoll() throws {
+    let dieGen = TestRollGen.gen(source: [12: [1, 9]])
+    let result = try XCTUnwrap(Roller("-2 - 2d12 - -3", dieGen: dieGen)).eval()
+
+    let expectedRolls = [
+      Roll(result: 1, die: 12),
+      Roll(result: 9, die: 12),
+    ]
+    let expectedResult = -9
+
+    XCTAssertEqual(result.rolls, expectedRolls)
+    XCTAssertEqual(result.result, expectedResult)
+  }
+
   func testComplexRoll() throws {
     let dieGen = TestRollGen.gen(source: [6: [1, 4, 2, 6, 6, 2], 12: [4, 8, 9, 1]])
     let result = try XCTUnwrap(Roller("4d6kh2x6 - 3d12dl1r9 + 23", dieGen: dieGen)).eval()

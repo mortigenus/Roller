@@ -8,7 +8,7 @@
 import Parsing
 
 public struct RollRequest: Equatable {
-  public var amount: Int
+  public var amount: UInt
   public var die: Int
 
   public var keepInstruction: KeepInstruction?
@@ -87,7 +87,7 @@ public struct RollRequest: Equatable {
   }
 
   public init(
-    amount: Int,
+    amount: UInt,
     die: Int,
     keepInstruction: KeepInstruction? = nil,
     rerollInstruction: RerollInstruction? = nil,
@@ -101,7 +101,7 @@ public struct RollRequest: Equatable {
     self.countSuccessesInstruction = countSuccessesInstruction
   }
 
-  private init?(amount: Int, die: Int, instructions: [Instruction]) {
+  private init?(amount: UInt, die: Int, instructions: [Instruction]) {
     var keepInstruction: KeepInstruction?
     var rerollInstruction: RerollInstruction?
     var explodeInstruction: ExplodeInstruction?
@@ -150,7 +150,7 @@ public struct RollRequest: Equatable {
   }
 
   static func parser() -> AnyParser<Substring, Self> {
-    Int.parser()
+    UInt.parser()
       .skip(StartsWith("d"))
       .take(Int.parser())
       .take(Many(Instruction.parser()))
