@@ -27,5 +27,6 @@ Currently supported expressions:
 - Multiple rolls in one: 4d6kh1 + 1d4 - 1
 
 ## TODO:
+- Fix parsing to support sign w/o spaces around (e.g. 3d6-1, 1d12+2)
 - Support critical success?
 - Refactor `roll()` method
