@@ -52,15 +52,15 @@ public struct Roller {
       return RollerResponse(rolls: [], result: x)
     case let .roll(request):
       return self.roll(request: request, using: &rng)
-    case let .add(expr1, expr2):
+    case let .operation(.addition, expr1, expr2):
       let resp1 = eval(expression: expr1, rng: &rng)
       let resp2 = eval(expression: expr2, rng: &rng)
       return RollerResponse(rolls: resp1.rolls + resp2.rolls, result: resp1.result + resp2.result)
-    case let .subtract(expr1, expr2):
+    case let .operation(.subtraction, expr1, expr2):
       let resp1 = eval(expression: expr1, rng: &rng)
       let resp2 = eval(expression: expr2, rng: &rng)
       return RollerResponse(rolls: resp1.rolls + resp2.rolls, result: resp1.result - resp2.result)
-    case let .multiply(expr1, expr2):
+    case let .operation(.multiplication, expr1, expr2):
       let resp1 = eval(expression: expr1, rng: &rng)
       let resp2 = eval(expression: expr2, rng: &rng)
       return RollerResponse(rolls: resp1.rolls + resp2.rolls, result: resp1.result * resp2.result)

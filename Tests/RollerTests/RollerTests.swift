@@ -650,7 +650,7 @@ final class RollerTests: XCTestCase {
 
   func testNegativeNumbersRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 9]])
-    let result = try XCTUnwrap(Roller("-2 - 2d12 - -3", dieGen: dieGen)).eval()
+    let result = try XCTUnwrap(Roller("-2-2d12--3", dieGen: dieGen)).eval()
 
     let expectedRolls = [
       Roll(result: 1, die: 12),
