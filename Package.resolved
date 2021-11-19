@@ -6,17 +6,8 @@
         "repositoryURL": "https://github.com/apple/swift-argument-parser",
         "state": {
           "branch": null,
-          "revision": "831ed5e860a70e745bc1337830af4786b2576881",
-          "version": "0.4.1"
-        }
-      },
-      {
-        "package": "Benchmark",
-        "repositoryURL": "https://github.com/google/swift-benchmark",
-        "state": {
-          "branch": null,
-          "revision": "8e0ef8bb7482ab97dcd2cd1d6855bd38921c345d",
-          "version": "0.1.0"
+          "revision": "6b2aa2748a7881eebb9f84fb10c01293e15b52ca",
+          "version": "0.5.0"
         }
       },
       {
@@ -32,18 +23,9 @@
         "package": "swift-parsing",
         "repositoryURL": "https://github.com/pointfreeco/swift-parsing",
         "state": {
-          "branch": "main",
-          "revision": "7f7288ff7917f948ab73c6d4d72f7fe9d32d193e",
-          "version": null
-        }
-      },
-      {
-        "package": "Prelude",
-        "repositoryURL": "https://github.com/pointfreeco/swift-prelude",
-        "state": {
-          "branch": "main",
-          "revision": "0ec0a56bb99911647d2081f99a6f6c9699a6a646",
-          "version": null
+          "branch": null,
+          "revision": "0f539b4977ee83251bc228dd067cbbe48e1430c2",
+          "version": "0.3.1"
         }
       }
     ]

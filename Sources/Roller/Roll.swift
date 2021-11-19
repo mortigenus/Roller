@@ -5,9 +5,6 @@
 //  Created by Ivan Chalov on 19.04.2021.
 //
 
-import Optics
-import Prelude
-
 public struct Roll: Equatable {
   public var result: Int
   public var die: Int
@@ -24,6 +21,8 @@ public struct Roll: Equatable {
   }
 
   func discarded() -> Roll {
-    self |> \.isDiscarded .~ true
+    var copy = self
+    copy.discard()
+    return copy
   }
 }

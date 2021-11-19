@@ -1,5 +1,4 @@
 import Gen
-import Prelude
 
 /*
  Keep highest: 4d6kh3
@@ -185,7 +184,7 @@ public struct Roller {
     }
 
     let result: Int
-    let nonDiscardedRolls = rolls.filter(not <<< \.isDiscarded)
+    let nonDiscardedRolls = rolls.filter { !$0.isDiscarded }
     if let action = request.countSuccessesInstruction {
       switch action {
       case .countSuccessesEqualTo(let x):

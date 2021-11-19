@@ -13,8 +13,7 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/apple/swift-argument-parser", from: "0.4.1"),
     .package(url: "https://github.com/pointfreeco/swift-gen.git", from: "0.3.0"),
-    .package(url: "https://github.com/pointfreeco/swift-parsing", .branch("main")),
-    .package(name: "Prelude", url: "https://github.com/pointfreeco/swift-prelude", .branch("main")),
+    .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.2.0"),
   ],
   targets: [
     .target(
@@ -22,8 +21,6 @@ let package = Package(
       dependencies: [
         .product(name: "Gen", package: "swift-gen"),
         .product(name: "Parsing", package: "swift-parsing"),
-        "Prelude",
-        .product(name: "Optics", package: "Prelude"),
       ]),
     .systemLibrary(
       name: "Creadline"

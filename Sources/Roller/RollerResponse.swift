@@ -5,8 +5,6 @@
 //  Created by Ivan Chalov on 19.04.2021.
 //
 
-import Prelude
-
 public struct RollerResponse: CustomDebugStringConvertible {
   public var rolls: [Roll]
   public var result: Int
