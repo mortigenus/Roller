@@ -31,6 +31,7 @@ final class RollerTests: XCTestCase {
 
   func testRollsWithCorrectFormatAreCreated() {
     XCTAssertNotNil(Roller("4d6"))
+    XCTAssertNotNil(Roller("d20"))
     XCTAssertNotNil(Roller("4d6kh3 + 23d12 + 7"))
     XCTAssertNotNil(Roller("4d6x>=6 + 20d20kh10 - 8"))
     XCTAssertNotNil(Roller("   14d6 +    5"))
@@ -51,6 +52,16 @@ final class RollerTests: XCTestCase {
       ]
     )
     XCTAssertEqual(result.result, 13)
+  }
+
+  func testOmittingNumberOfDice() throws {
+    let dieGen = TestRollGen.gen(source: [20: [19]])
+    let result = try XCTUnwrap(Roller("d20", dieGen: dieGen)).eval()
+
+    XCTAssertEqual(result.rolls, [
+      Roll(result: 19, die: 20),
+    ])
+    XCTAssertEqual(result.result, 19)
   }
 
   func testBigNumberRolls() throws {
