@@ -5,7 +5,7 @@
 //  Created by Ivan Chalov on 19.04.2021.
 //
 
-public struct Roll: Equatable {
+public struct Roll: Hashable {
   public var result: Int
   public var die: Int
   public var isDiscarded: Bool = false

@@ -7,7 +7,7 @@
 
 import Parsing
 
-public struct RollRequest: Equatable {
+public struct RollRequest: Hashable {
   public var amount: UInt
   public var die: Int
 
@@ -16,23 +16,23 @@ public struct RollRequest: Equatable {
   public var explodeInstruction: ExplodeInstruction?
   public var countSuccessesInstruction: CountSuccessesInstruction?
 
-  public enum KeepInstruction: Equatable {
+  public enum KeepInstruction: Hashable {
     case keepHighest(Int)
     case keepLowest(Int)
     case dropHighest(Int)
     case dropLowest(Int)
 
     static func parser() -> AnyParser<Substring.UTF8View, Self> {
-      OneOfMany(
-        StartsWith("kh".utf8).take(Int.parser()).map(KeepInstruction.keepHighest),
-        StartsWith("kl".utf8).take(Int.parser()).map(KeepInstruction.keepLowest),
-        StartsWith("dh".utf8).take(Int.parser()).map(KeepInstruction.dropHighest),
-        StartsWith("dl".utf8).take(Int.parser()).map(KeepInstruction.dropLowest)
-      ).eraseToAnyParser()
+      OneOf {
+        RollModifier(keepHighest) { "kh".utf8 }
+        RollModifier(keepLowest) { "kl".utf8 }
+        RollModifier(dropHighest) { "dh".utf8 }
+        RollModifier(dropLowest) { "dl".utf8 }
+      }.eraseToAnyParser()
     }
   }
 
-  public enum RerollInstruction: Equatable {
+  public enum RerollInstruction: Hashable {
     case rerollEqualTo(Int)
     case rerollLessThan(Int)
     case rerollLessThanOrEqualTo(Int)
@@ -40,17 +40,17 @@ public struct RollRequest: Equatable {
     case rerollGreaterThanOrEqualTo(Int)
 
     static func parser() -> AnyParser<Substring.UTF8View, Self> {
-      OneOfMany(
-        StartsWith("r".utf8).take(Int.parser()).map(RerollInstruction.rerollEqualTo),
-        StartsWith("r<".utf8).take(Int.parser()).map(RerollInstruction.rerollLessThan),
-        StartsWith("r<=".utf8).take(Int.parser()).map(RerollInstruction.rerollLessThanOrEqualTo),
-        StartsWith("r>".utf8).take(Int.parser()).map(RerollInstruction.rerollGreaterThan),
-        StartsWith("r>=".utf8).take(Int.parser()).map(RerollInstruction.rerollGreaterThanOrEqualTo)
-      ).eraseToAnyParser()
+      OneOf {
+        RollModifier(rerollEqualTo) { "r".utf8 }
+        RollModifier(rerollLessThan) { "r<".utf8 }
+        RollModifier(rerollLessThanOrEqualTo) { "r<=".utf8 }
+        RollModifier(rerollGreaterThan) { "r>".utf8 }
+        RollModifier(rerollGreaterThanOrEqualTo) { "r>=".utf8 }
+      }.eraseToAnyParser()
     }
   }
 
-  public enum ExplodeInstruction: Equatable {
+  public enum ExplodeInstruction: Hashable {
     case explodeEqualTo(Int)
     case explodeLessThan(Int)
     case explodeLessThanOrEqualTo(Int)
@@ -58,17 +58,17 @@ public struct RollRequest: Equatable {
     case explodeGreaterThanOrEqualTo(Int)
 
     static func parser() -> AnyParser<Substring.UTF8View, Self> {
-      OneOfMany(
-        StartsWith("x".utf8).take(Int.parser()).map(ExplodeInstruction.explodeEqualTo),
-        StartsWith("x<".utf8).take(Int.parser()).map(ExplodeInstruction.explodeLessThan),
-        StartsWith("x<=".utf8).take(Int.parser()).map(ExplodeInstruction.explodeLessThanOrEqualTo),
-        StartsWith("x>".utf8).take(Int.parser()).map(ExplodeInstruction.explodeGreaterThan),
-        StartsWith("x>=".utf8).take(Int.parser()).map(ExplodeInstruction.explodeGreaterThanOrEqualTo)
-      ).eraseToAnyParser()
+      OneOf {
+        RollModifier(explodeEqualTo) { "x".utf8 }
+        RollModifier(explodeLessThan) { "x<".utf8 }
+        RollModifier(explodeLessThanOrEqualTo) { "x<=".utf8 }
+        RollModifier(explodeGreaterThan) { "x>".utf8 }
+        RollModifier(explodeGreaterThanOrEqualTo) { "x>=".utf8 }
+      }.eraseToAnyParser()
     }
   }
 
-  public enum CountSuccessesInstruction: Equatable {
+  public enum CountSuccessesInstruction: Hashable {
     case countSuccessesEqualTo(Int)
     case countSuccessesLessThan(Int)
     case countSuccessesLessThanOrEqualTo(Int)
@@ -76,13 +76,13 @@ public struct RollRequest: Equatable {
     case countSuccessesGreaterThanOrEqualTo(Int)
 
     static func parser() -> AnyParser<Substring.UTF8View, Self> {
-      OneOfMany(
-        StartsWith("cs=".utf8).take(Int.parser()).map(CountSuccessesInstruction.countSuccessesEqualTo),
-        StartsWith("cs<".utf8).take(Int.parser()).map(CountSuccessesInstruction.countSuccessesLessThan),
-        StartsWith("cs<=".utf8).take(Int.parser()).map(CountSuccessesInstruction.countSuccessesLessThanOrEqualTo),
-        StartsWith("cs>".utf8).take(Int.parser()).map(CountSuccessesInstruction.countSuccessesGreaterThan),
-        StartsWith("cs>=".utf8).take(Int.parser()).map(CountSuccessesInstruction.countSuccessesGreaterThanOrEqualTo)
-      ).eraseToAnyParser()
+      OneOf {
+        RollModifier(countSuccessesEqualTo) { "cs=".utf8 }
+        RollModifier(countSuccessesLessThan) { "cs<".utf8 }
+        RollModifier(countSuccessesLessThanOrEqualTo) { "cs<=".utf8 }
+        RollModifier(countSuccessesGreaterThan) { "cs>".utf8 }
+        RollModifier(countSuccessesGreaterThanOrEqualTo) { "cs>=".utf8 }
+      }.eraseToAnyParser()
     }
   }
 
@@ -141,20 +141,54 @@ public struct RollRequest: Equatable {
     case countSuccesses(CountSuccessesInstruction)
 
     static func parser() -> AnyParser<Substring.UTF8View, Self> {
-      KeepInstruction.parser().map(Instruction.keep)
-        .orElse(RerollInstruction.parser().map(Instruction.reroll))
-        .orElse(ExplodeInstruction.parser().map(Instruction.explode))
-        .orElse(CountSuccessesInstruction.parser().map(Instruction.countSuccesses))
-        .eraseToAnyParser()
+      OneOf {
+        Parse(keep, with: KeepInstruction.parser)
+        Parse(reroll, with: RerollInstruction.parser)
+        Parse(explode, with: ExplodeInstruction.parser)
+        Parse(countSuccesses, with: CountSuccessesInstruction.parser)
+      }.eraseToAnyParser()
     }
   }
 
   static func parser() -> AnyParser<Substring.UTF8View, Self> {
-    UInt.parser()
-      .skip(StartsWith("d".utf8))
-      .take(Int.parser())
-      .take(Many(Instruction.parser()))
-      .compactMap(RollRequest.init(amount:die:instructions:))
-      .eraseToAnyParser()
+    Parse(RollRequest.init(amount:die:instructions:)) {
+      OneOf {
+        UInt.parser()
+        Always(UInt(1))
+      }
+      "d".utf8
+      Int.parser()
+      Many { Instruction.parser() }
+    }.compactMap { $0 }.eraseToAnyParser()
+  }
+}
+
+private struct RollModifier<P>: Parser
+where
+P: Parser,
+P.Input == Substring.UTF8View
+{
+  let parsers: P
+
+  @inlinable
+  init<Upstream, RollModifier>(
+    _ transform: @escaping (Int) -> RollModifier,
+    @ParserBuilder with parsers: () -> Upstream
+  )
+  where
+  Upstream.Input == Substring.UTF8View,
+  P == Parsers.Map<Parsers.SkipFirst<Skip<Upstream>, Parsers.IntParser<Substring.UTF8View, Int>>, RollModifier>
+  {
+    self.parsers = Skip(parsers()).take(Int.parser()).map(transform)
+  }
+
+  @inlinable
+  func parse(_ input: inout Substring.UTF8View) -> P.Output? {
+    let original = input
+    guard let output = self.parsers.parse(&input) else {
+      input = original
+      return nil
+    }
+    return output
   }
 }

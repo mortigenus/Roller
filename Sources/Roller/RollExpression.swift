@@ -8,7 +8,7 @@
 import Parsing
 
 public enum RollExpression {
-  public enum Operation: Equatable {
+  public enum Operation: Hashable {
     case addition
     case subtraction
     case multiplication
@@ -19,71 +19,123 @@ public enum RollExpression {
   indirect case operation(Operation, RollExpression, RollExpression)
 
   public init?(_ string: String) {
-    let (parsedExpr, rest) = expr.parse(string[...].utf8)
-    guard let rollExpr = parsedExpr, rest.isEmpty else { return nil }
+    var input = string[...].utf8
+    let parsedExpr = additionAndSubtraction.parse(&input)
+    guard let rollExpr = parsedExpr, input.isEmpty else { return nil }
     self = rollExpr
   }
 }
 
-// expr = term + expr | term - expr | term
-// term = factor * term | factor
-// factor = (expr) | number | roll
+private extension RollExpression {
+  static func addition(_ expr1: RollExpression, _ expr2: RollExpression) -> RollExpression {
+    .operation(.addition, expr1, expr2)
+  }
 
-private let expr: AnyParser<Substring.UTF8View, RollExpression> =
-  term.chainl1(
-    symbol("+").map {{ RollExpression.operation(.addition, $0, $1) }}
-      .orElse(symbol("-").map {{ RollExpression.operation(.subtraction, $0, $1) }}))
+  static func subtraction(_ expr1: RollExpression, _ expr2: RollExpression) -> RollExpression {
+    .operation(.subtraction, expr1, expr2)
+  }
 
-private let term = factor.chainl1(
-  symbol("*").map {{ RollExpression.operation(.multiplication, $0, $1) }})
+  static func multiplication(_ expr1: RollExpression, _ expr2: RollExpression) -> RollExpression {
+    .operation(.multiplication, expr1, expr2)
+  }
+}
 
-private let factor = OneOfMany(paren, roll, number)
+private let additionAndSubtraction = InfixOperator(
+  OneOf {
+    Parse(RollExpression.addition) { "+".utf8 }
+    Parse(RollExpression.subtraction) { "-".utf8 }
+  },
+  associativity: .left,
+  lowerThan: multiplication
+)
 
-private let paren = Skip(symbol("(")).take(Lazy { expr }).skip(symbol(")")).eraseToAnyParser()
+private let multiplication = InfixOperator(
+  Parse(RollExpression.multiplication) { "*".utf8 },
+  associativity: .left,
+  lowerThan: factor
+)
 
-private let number = Skip(Whitespace<Substring.UTF8View>())
-  .take(Int.parser())
-  .skip(Whitespace())
-  .map(RollExpression.number)
-  .eraseToAnyParser()
+private let factor: AnyParser<Substring.UTF8View, RollExpression> =
+OneOf {
+  Parse {
+    symbol("(")
+    Lazy { additionAndSubtraction }
+    symbol(")")
+  }
 
-private let roll = Skip(Whitespace<Substring.UTF8View>())
-  .take(RollRequest.parser())
-  .skip(Whitespace())
-  .map(RollExpression.roll)
-  .eraseToAnyParser()
+  Parse(RollExpression.roll) {
+    Skip(Whitespace())
+    RollRequest.parser()
+    Skip(Whitespace())
+  }
+
+  Parse(RollExpression.number) {
+    Skip(Whitespace())
+    Int.parser()
+    Skip(Whitespace())
+  }
+}.eraseToAnyParser()
 
 private let symbol = { (symbol: String) in
   Skip(Whitespace<Substring.UTF8View>()).skip(StartsWith(symbol.utf8)).skip(Whitespace())
 }
 
-private func fix<A, B>(_ f: @escaping (@escaping (A) -> B) -> (A) -> B) -> (A) -> B {
-  return { f(fix(f))($0) }
+private struct InfixOperator<Operator, Operand>: Parser
+where
+Operator: Parser,
+Operand: Parser,
+Operator.Input == Operand.Input,
+Operator.Output == (Operand.Output, Operand.Output) -> Operand.Output
+{
+  let `associativity`: Associativity
+  let operand: Operand
+  let `operator`: Operator
+
+  @inlinable
+  init(
+    _ operator: Operator,
+    associativity: Associativity,
+    lowerThan operand: Operand
+  ) {
+    self.associativity = `associativity`
+    self.operand = operand
+    self.operator = `operator`
+  }
+
+  @inlinable
+  func parse(_ input: inout Operand.Input) -> Operand.Output? {
+    switch associativity {
+    case .left:
+      guard var lhs = self.operand.parse(&input) else { return nil }
+      var rest = input
+      while let operation = self.operator.parse(&input),
+            let rhs = self.operand.parse(&input)
+      {
+        rest = input
+        lhs = operation(lhs, rhs)
+      }
+      input = rest
+      return lhs
+    case .right:
+      var lhs: [(Operand.Output, Operator.Output)] = []
+      while true {
+        guard let rhs = self.operand.parse(&input)
+        else { break }
+        guard let operation = self.operator.parse(&input)
+        else {
+          return lhs.reversed().reduce(rhs) { rhs, pair in
+            let (lhs, operation) = pair
+            return operation(lhs, rhs)
+          }
+        }
+        lhs.append((rhs, operation))
+      }
+      return nil
+    }
+  }
 }
 
-extension Parser {
-  // chainl1<P>(op) parses one or more occurrences of `P`, separated by `op`.
-  // Returns a value obtained by a left associative application of all functions
-  // returned by `op` to the values returned by `P`.
-  // This parser can for example be used to eliminate left recursion
-  // which typically occurs in expression grammars.
-  // See https://hackage.haskell.org/package/parsec/docs/Text-Parsec-Combinator.html#v:chainl1
-  fileprivate func chainl1<P>(_ op: P) -> AnyParser<Input, Output>
-  where P: Parser, P.Input == Input, P.Output == (Output, Output) -> Output {
-    self.flatMap { x in
-      fix { recur in
-        { x in
-          op.flatMap { f in
-            self.flatMap { y in
-              recur(f(x, y))
-                .eraseToAnyParser()
-            }
-          }
-          .orElse(Always(x))
-          .eraseToAnyParser()
-        }
-      }(x)
-    }
-    .eraseToAnyParser()
-  }
+private enum Associativity {
+  case left
+  case right
 }
