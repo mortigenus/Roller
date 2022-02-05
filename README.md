@@ -1,5 +1,7 @@
 # ⚠️ WIP
 
+![Tests workflow](https://github.com/mortigenus/Roller/actions/workflows/swift.yml/badge.svg)
+
 # Roller
 
 Rolling some dice. You can use it from the command line or add it to your app!
