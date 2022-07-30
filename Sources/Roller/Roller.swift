@@ -33,11 +33,8 @@ public struct Roller {
     }
   }
 
-  public init?(_ string: String, dieGen: ((Int) -> Gen<Roll>)? = nil) {
-    guard let rollExpression = RollExpression(string) else {
-      return nil
-    }
-    self.init(rollExpression: rollExpression, dieGen: dieGen)
+  public init(_ string: String, dieGen: ((Int) -> Gen<Roll>)? = nil) throws {
+    self.init(rollExpression: try RollExpression(string), dieGen: dieGen)
   }
 
   public func eval(using rng: AnyRandomNumberGenerator? = nil) -> RollerResponse {
@@ -72,70 +69,70 @@ public struct Roller {
       let roll = dieGen.run(using: &rng)
 
       if let reroll = request.rerollInstruction {
-        switch reroll {
-        case .rerollEqualTo(let x):
-          if roll.result == x { return [roll.discarded(), dieGen.run(using: &rng)] }
-        case .rerollLessThan(let x):
-          if roll.result < x { return [roll.discarded(), dieGen.run(using: &rng)] }
-        case .rerollLessThanOrEqualTo(let x):
-          if roll.result <= x { return [roll.discarded(), dieGen.run(using: &rng)] }
-        case .rerollGreaterThan(let x):
-          if roll.result > x { return [roll.discarded(), dieGen.run(using: &rng)] }
-        case .rerollGreaterThanOrEqualTo(let x):
-          if roll.result >= x { return [roll.discarded(), dieGen.run(using: &rng)] }
+        switch reroll.instruction {
+        case .rerollEqualTo:
+          if roll.result == reroll.value { return [roll.discarded(), dieGen.run(using: &rng)] }
+        case .rerollLessThan:
+          if roll.result < reroll.value { return [roll.discarded(), dieGen.run(using: &rng)] }
+        case .rerollLessThanOrEqualTo:
+          if roll.result <= reroll.value { return [roll.discarded(), dieGen.run(using: &rng)] }
+        case .rerollGreaterThan:
+          if roll.result > reroll.value { return [roll.discarded(), dieGen.run(using: &rng)] }
+        case .rerollGreaterThanOrEqualTo:
+          if roll.result >= reroll.value { return [roll.discarded(), dieGen.run(using: &rng)] }
         }
       }
 
       if let explode = request.explodeInstruction {
-        switch explode {
-        case .explodeEqualTo(let x):
-          if roll.result == x {
+        switch explode.instruction {
+        case .explodeEqualTo:
+          if roll.result == explode.value {
             var newRolls = [roll]
             var newRoll: Roll
             repeat {
               newRoll = dieGen.run()
               newRolls.append(newRoll)
-            } while newRoll.result == x
+            } while newRoll.result == explode.value
             return newRolls
           }
-        case .explodeLessThan(let x):
-          if roll.result < x {
+        case .explodeLessThan:
+          if roll.result < explode.value {
             var newRolls = [roll]
             var newRoll: Roll
             repeat {
               newRoll = dieGen.run()
               newRolls.append(newRoll)
-            } while newRoll.result < x
+            } while newRoll.result < explode.value
             return newRolls
           }
-        case .explodeLessThanOrEqualTo(let x):
-          if roll.result <= x {
+        case .explodeLessThanOrEqualTo:
+          if roll.result <= explode.value {
             var newRolls = [roll]
             var newRoll: Roll
             repeat {
               newRoll = dieGen.run()
               newRolls.append(newRoll)
-            } while newRoll.result <= x
+            } while newRoll.result <= explode.value
             return newRolls
           }
-        case .explodeGreaterThan(let x):
-          if roll.result > x {
+        case .explodeGreaterThan:
+          if roll.result > explode.value {
             var newRolls = [roll]
             var newRoll: Roll
             repeat {
               newRoll = dieGen.run()
               newRolls.append(newRoll)
-            } while newRoll.result > x
+            } while newRoll.result > explode.value
             return newRolls
           }
-        case .explodeGreaterThanOrEqualTo(let x):
-          if roll.result >= x {
+        case .explodeGreaterThanOrEqualTo:
+          if roll.result >= explode.value {
             var newRolls = [roll]
             var newRoll: Roll
             repeat {
               newRoll = dieGen.run()
               newRolls.append(newRoll)
-            } while newRoll.result >= x
+            } while newRoll.result >= explode.value
             return newRolls
           }
         }
@@ -145,36 +142,36 @@ public struct Roller {
     }
 
     if let extra = request.keepInstruction {
-      switch extra {
-      case .keepHighest(let n):
+      switch extra.instruction {
+      case .keepHighest:
         var filteredIndices = rolls.indices.filter { !rolls[$0].isDiscarded }
         rolls.modifyEach { $0.discard() }
-        (1...n).forEach { _ in
+        (1...extra.value).forEach { _ in
           if let maxIndex = filteredIndices.max(by: { rolls[$0].result < rolls[$1].result }) {
             rolls[maxIndex].isDiscarded = false
             filteredIndices.remove(at: filteredIndices.firstIndex(of: maxIndex)!)
           }
         }
-      case .keepLowest(let n):
+      case .keepLowest:
         var filteredIndices = rolls.indices.filter { !rolls[$0].isDiscarded }
         rolls.modifyEach { $0.discard() }
-        (1...n).forEach { _ in
+        (1...extra.value).forEach { _ in
           if let minIndex = filteredIndices.min(by: { rolls[$0].result < rolls[$1].result }) {
             rolls[minIndex].isDiscarded = false
             filteredIndices.remove(at: filteredIndices.firstIndex(of: minIndex)!)
           }
         }
-      case .dropHighest(let n):
+      case .dropHighest:
         var filteredIndices = rolls.indices.filter { !rolls[$0].isDiscarded }
-        (1...n).forEach { _ in
+        (1...extra.value).forEach { _ in
           if let maxIndex = filteredIndices.max(by: { rolls[$0].result < rolls[$1].result }) {
             rolls[maxIndex].isDiscarded = true
             filteredIndices.remove(at: filteredIndices.firstIndex(of: maxIndex)!)
           }
         }
-      case .dropLowest(let n):
+      case .dropLowest:
         var filteredIndices = rolls.indices.filter { !rolls[$0].isDiscarded }
-        (1...n).forEach { _ in
+        (1...extra.value).forEach { _ in
           if let minIndex = filteredIndices.min(by: { rolls[$0].result < rolls[$1].result }) {
             rolls[minIndex].isDiscarded = true
             filteredIndices.remove(at: filteredIndices.firstIndex(of: minIndex)!)
@@ -186,17 +183,17 @@ public struct Roller {
     let result: Int
     let nonDiscardedRolls = rolls.filter { !$0.isDiscarded }
     if let action = request.countSuccessesInstruction {
-      switch action {
-      case .countSuccessesEqualTo(let x):
-        result = nonDiscardedRolls.filter { $0.result == x }.count
-      case .countSuccessesLessThan(let x):
-        result = nonDiscardedRolls.filter { $0.result < x }.count
-      case .countSuccessesLessThanOrEqualTo(let x):
-        result = nonDiscardedRolls.filter { $0.result <= x }.count
-      case .countSuccessesGreaterThan(let x):
-        result = nonDiscardedRolls.filter { $0.result > x }.count
-      case .countSuccessesGreaterThanOrEqualTo(let x):
-        result = nonDiscardedRolls.filter { $0.result >= x }.count
+      switch action.instruction {
+      case .countSuccessesEqualTo:
+        result = nonDiscardedRolls.filter { $0.result == action.value }.count
+      case .countSuccessesLessThan:
+        result = nonDiscardedRolls.filter { $0.result < action.value }.count
+      case .countSuccessesLessThanOrEqualTo:
+        result = nonDiscardedRolls.filter { $0.result <= action.value }.count
+      case .countSuccessesGreaterThan:
+        result = nonDiscardedRolls.filter { $0.result > action.value }.count
+      case .countSuccessesGreaterThanOrEqualTo:
+        result = nonDiscardedRolls.filter { $0.result >= action.value }.count
       }
     } else {
       result = nonDiscardedRolls.map(\.result).reduce(0, +)

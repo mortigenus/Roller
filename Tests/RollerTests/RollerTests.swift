@@ -17,30 +17,30 @@ struct TestRollGen {
 
 final class RollerTests: XCTestCase {
 
-  func testRollsWithIncorrectFormatFail() {
-    XCTAssertNil(Roller("qwe"))
-    XCTAssertNil(Roller("4d5f"))
-    XCTAssertNil(Roller("4d5 and also something here"))
-    XCTAssertNil(Roller("4d5rl5"))
-    XCTAssertNil(Roller("r 4d5"))
-    XCTAssertNil(Roller("4d5kh1r2r2"))
-    XCTAssertNil(Roller("4d5x5kh2kh3"))
-    XCTAssertNil(Roller("4d5cs<=7kh4dl2"))
-    XCTAssertNil(Roller("-4d5"))
+  func testRollsWithIncorrectFormatFail() throws {
+    XCTAssertThrowsError(try Roller("qwe"))
+    XCTAssertThrowsError(try Roller("4d5f"))
+    XCTAssertThrowsError(try Roller("4d5 and also something here"))
+    XCTAssertThrowsError(try Roller("4d5rl5"))
+    XCTAssertThrowsError(try Roller("r 4d5"))
+    XCTAssertThrowsError(try Roller("4d5kh1r2r2"))
+    XCTAssertThrowsError(try Roller("4d5x5kh2kh3"))
+    XCTAssertThrowsError(try Roller("4d5cs<=7kh4dl2"))
+    XCTAssertThrowsError(try Roller("-4d5"))
   }
 
-  func testRollsWithCorrectFormatAreCreated() {
-    XCTAssertNotNil(Roller("4d6"))
-    XCTAssertNotNil(Roller("d20"))
-    XCTAssertNotNil(Roller("4d6kh3 + 23d12 + 7"))
-    XCTAssertNotNil(Roller("4d6x>=6 + 20d20kh10 - 8"))
-    XCTAssertNotNil(Roller("   14d6 +    5"))
-    XCTAssertNotNil(Roller("    23  -  4d6"))
+  func testRollsWithCorrectFormatAreCreated() throws {
+    XCTAssertNotNil(try Roller("4d6"))
+    XCTAssertNotNil(try Roller("d20"))
+    XCTAssertNotNil(try Roller("4d6kh3 + 23d12 + 7"))
+    XCTAssertNotNil(try Roller("4d6x>=6 + 20d20kh10 - 8"))
+    XCTAssertNotNil(try Roller("   14d6 +    5"))
+    XCTAssertNotNil(try Roller("    23  -  4d6"))
   }
 
   func testSimpleRoll() throws {
     let dieGen = TestRollGen.gen(source: [8: [2, 6, 1, 4]])
-    let result = try XCTUnwrap(Roller("4d8", dieGen: dieGen)).eval()
+    let result = try Roller("4d8", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -56,7 +56,7 @@ final class RollerTests: XCTestCase {
 
   func testOmittingNumberOfDice() throws {
     let dieGen = TestRollGen.gen(source: [20: [19]])
-    let result = try XCTUnwrap(Roller("d20", dieGen: dieGen)).eval()
+    let result = try Roller("d20", dieGen: dieGen).eval()
 
     XCTAssertEqual(result.rolls, [
       Roll(result: 19, die: 20),
@@ -66,7 +66,7 @@ final class RollerTests: XCTestCase {
 
   func testBigNumberRolls() throws {
     let dieGen = { (_: Int) in Gen.always(Roll(result: 20, die: 100)) }
-    let result = try XCTUnwrap(Roller("125d100", dieGen: dieGen)).eval()
+    let result = try Roller("125d100", dieGen: dieGen).eval()
 
     XCTAssertEqual(result.rolls.count, 125)
     XCTAssertTrue(
@@ -77,7 +77,7 @@ final class RollerTests: XCTestCase {
 
   func testKeepHeighestRoll() throws {
     let dieGen = TestRollGen.gen(source: [8: [6, 2, 6, 7, 1, 6]])
-    let result = try XCTUnwrap(Roller("6d8kh3", dieGen: dieGen)).eval()
+    let result = try Roller("6d8kh3", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -95,7 +95,7 @@ final class RollerTests: XCTestCase {
 
   func testKeelLowestRoll() throws {
     let dieGen = TestRollGen.gen(source: [8: [3, 8, 3, 2, 7, 3]])
-    let result = try XCTUnwrap(Roller("6d8kl3", dieGen: dieGen)).eval()
+    let result = try Roller("6d8kl3", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -113,7 +113,7 @@ final class RollerTests: XCTestCase {
 
   func testDropHeighestRoll() throws {
     let dieGen = TestRollGen.gen(source: [8: [6, 2, 6, 7, 1, 6]])
-    let result = try XCTUnwrap(Roller("6d8dh3", dieGen: dieGen)).eval()
+    let result = try Roller("6d8dh3", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -131,7 +131,7 @@ final class RollerTests: XCTestCase {
 
   func testDropLowestRoll() throws {
     let dieGen = TestRollGen.gen(source: [8: [3, 8, 3, 2, 7, 3]])
-    let result = try XCTUnwrap(Roller("6d8dl3", dieGen: dieGen)).eval()
+    let result = try Roller("6d8dl3", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -149,7 +149,7 @@ final class RollerTests: XCTestCase {
 
   func testRerollEqualRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 7, 1, 1, 4, 5, 1, 8, 9]])
-    let result = try XCTUnwrap(Roller("6d12r1", dieGen: dieGen)).eval()
+    let result = try Roller("6d12r1", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -170,7 +170,7 @@ final class RollerTests: XCTestCase {
 
   func testRerollLessThanRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 7, 2, 1, 4, 3, 1, 8, 9]])
-    let result = try XCTUnwrap(Roller("6d12r<3", dieGen: dieGen)).eval()
+    let result = try Roller("6d12r<3", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -191,7 +191,7 @@ final class RollerTests: XCTestCase {
 
   func testRerollLessThanOrEqualRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 7, 2, 1, 4, 3, 1, 8, 9]])
-    let result = try XCTUnwrap(Roller("6d12r<=2", dieGen: dieGen)).eval()
+    let result = try Roller("6d12r<=2", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -212,7 +212,7 @@ final class RollerTests: XCTestCase {
 
   func testRerollGreaterThanRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [11, 5, 10, 11, 8, 9, 11, 4, 3]])
-    let result = try XCTUnwrap(Roller("6d12r>9", dieGen: dieGen)).eval()
+    let result = try Roller("6d12r>9", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -233,7 +233,7 @@ final class RollerTests: XCTestCase {
 
   func testRerollGreaterThanOrEqualRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [11, 5, 10, 11, 8, 9, 11, 4, 3]])
-    let result = try XCTUnwrap(Roller("6d12r>=10", dieGen: dieGen)).eval()
+    let result = try Roller("6d12r>=10", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -254,7 +254,7 @@ final class RollerTests: XCTestCase {
 
   func testExplodeEqualRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 7, 1, 1, 4, 5, 1, 8, 9]])
-    let result = try XCTUnwrap(Roller("5d12x1", dieGen: dieGen)).eval()
+    let result = try Roller("5d12x1", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -275,7 +275,7 @@ final class RollerTests: XCTestCase {
 
   func testExplodeLessThanRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 7, 2, 1, 4, 3, 1, 8, 9]])
-    let result = try XCTUnwrap(Roller("5d12x<3", dieGen: dieGen)).eval()
+    let result = try Roller("5d12x<3", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -296,7 +296,7 @@ final class RollerTests: XCTestCase {
 
   func testExplodeLessThanOrEqualRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 7, 2, 1, 4, 3, 1, 8, 9]])
-    let result = try XCTUnwrap(Roller("5d12x<=2", dieGen: dieGen)).eval()
+    let result = try Roller("5d12x<=2", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -317,7 +317,7 @@ final class RollerTests: XCTestCase {
 
   func testExplodeGreaterThanRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [11, 5, 10, 11, 8, 9, 11, 4, 3]])
-    let result = try XCTUnwrap(Roller("5d12x>9", dieGen: dieGen)).eval()
+    let result = try Roller("5d12x>9", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -338,7 +338,7 @@ final class RollerTests: XCTestCase {
 
   func testExplodeGreaterThanOrEqualRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [11, 5, 10, 11, 8, 9, 11, 4, 3]])
-    let result = try XCTUnwrap(Roller("6d12r>=10", dieGen: dieGen)).eval()
+    let result = try Roller("6d12r>=10", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -359,7 +359,7 @@ final class RollerTests: XCTestCase {
 
   func testCountSuccessesEqualRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 7, 1, 1, 4, 5]])
-    let result = try XCTUnwrap(Roller("6d12cs=1", dieGen: dieGen)).eval()
+    let result = try Roller("6d12cs=1", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -377,7 +377,7 @@ final class RollerTests: XCTestCase {
 
   func testCountSuccessesLessThanRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 7, 2, 1, 4, 3]])
-    let result = try XCTUnwrap(Roller("6d12cs<3", dieGen: dieGen)).eval()
+    let result = try Roller("6d12cs<3", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -395,7 +395,7 @@ final class RollerTests: XCTestCase {
 
   func testCountSuccessesLessThanOrEqualRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 7, 2, 1, 4, 3]])
-    let result = try XCTUnwrap(Roller("6d12cs<=3", dieGen: dieGen)).eval()
+    let result = try Roller("6d12cs<=3", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -413,7 +413,7 @@ final class RollerTests: XCTestCase {
 
   func testCountSuccessesGreaterThanRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [11, 5, 10, 11, 8, 9]])
-    let result = try XCTUnwrap(Roller("6d12cs>9", dieGen: dieGen)).eval()
+    let result = try Roller("6d12cs>9", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -431,7 +431,7 @@ final class RollerTests: XCTestCase {
 
   func testCountSuccessesGreaterThanOrEqualRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [11, 5, 10, 11, 8, 9]])
-    let result = try XCTUnwrap(Roller("6d12cs>=10", dieGen: dieGen)).eval()
+    let result = try Roller("6d12cs>=10", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -449,13 +449,13 @@ final class RollerTests: XCTestCase {
 
   func testMixedInstructionsRolls() throws {
     let dieGen1 = TestRollGen.gen(source: [12: [11, 5, 10, 11, 8, 9, 2]])
-    let result1 = try XCTUnwrap(Roller("5d12kh3x8cs>10r10", dieGen: dieGen1)).eval()
+    let result1 = try Roller("5d12kh3x8cs>10r10", dieGen: dieGen1).eval()
 
     let dieGen2 = TestRollGen.gen(source: [12: [11, 5, 10, 11, 8, 9, 2]])
-    let result2 = try XCTUnwrap(Roller("5d12cs>10r10kh3x8", dieGen: dieGen2)).eval()
+    let result2 = try Roller("5d12cs>10r10kh3x8", dieGen: dieGen2).eval()
 
     let dieGen3 = TestRollGen.gen(source: [12: [11, 5, 10, 11, 8, 9, 2]])
-    let result3 = try XCTUnwrap(Roller("5d12x8r10kh3cs>10", dieGen: dieGen3)).eval()
+    let result3 = try Roller("5d12x8r10kh3cs>10", dieGen: dieGen3).eval()
 
     let expectedRolls = [
       Roll(result: 11, die: 12),
@@ -480,7 +480,7 @@ final class RollerTests: XCTestCase {
 
   func testAddMultipleSameRolls() throws {
     let dieGen = TestRollGen.gen(source: [6: [1, 4, 2, 1, 1]])
-    let result = try XCTUnwrap(Roller("3d6 + 2d6", dieGen: dieGen)).eval()
+    let result = try Roller("3d6 + 2d6", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -497,7 +497,7 @@ final class RollerTests: XCTestCase {
 
   func testAddMultipleDifferentRolls() throws {
     let dieGen = TestRollGen.gen(source: [6: [1, 4, 2], 8: [4, 8, 3, 1]])
-    let result = try XCTUnwrap(Roller("3d6 + 4d8", dieGen: dieGen)).eval()
+    let result = try Roller("3d6 + 4d8", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -516,10 +516,10 @@ final class RollerTests: XCTestCase {
 
   func testAddNumberAndRoll() throws {
     let dieGen1 = TestRollGen.gen(source: [8: [4, 8, 3, 1]])
-    let result1 = try XCTUnwrap(Roller("3 + 4d8", dieGen: dieGen1)).eval()
+    let result1 = try Roller("3 + 4d8", dieGen: dieGen1).eval()
 
     let dieGen2 = TestRollGen.gen(source: [8: [4, 8, 3, 1]])
-    let result2 = try XCTUnwrap(Roller("4d8 + 3", dieGen: dieGen2)).eval()
+    let result2 = try Roller("4d8 + 3", dieGen: dieGen2).eval()
 
     let expectedRolls = [
       Roll(result: 4, die: 8),
@@ -538,7 +538,7 @@ final class RollerTests: XCTestCase {
 
   func testSubtractMultipleSameRolls() throws {
     let dieGen = TestRollGen.gen(source: [6: [1, 4, 2, 6, 6]])
-    let result = try XCTUnwrap(Roller("3d6 - 2d6", dieGen: dieGen)).eval()
+    let result = try Roller("3d6 - 2d6", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -555,7 +555,7 @@ final class RollerTests: XCTestCase {
 
   func testSubtractMultipleDifferentRolls() throws {
     let dieGen = TestRollGen.gen(source: [6: [1, 4, 2], 8: [4, 8, 3, 1]])
-    let result = try XCTUnwrap(Roller("3d6 - 4d8", dieGen: dieGen)).eval()
+    let result = try Roller("3d6 - 4d8", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,
@@ -574,10 +574,10 @@ final class RollerTests: XCTestCase {
 
   func testSubtractNumberAndRoll() throws {
     let dieGen1 = TestRollGen.gen(source: [8: [4, 8, 3, 1]])
-    let result1 = try XCTUnwrap(Roller("3 - 4d8", dieGen: dieGen1)).eval()
+    let result1 = try Roller("3 - 4d8", dieGen: dieGen1).eval()
 
     let dieGen2 = TestRollGen.gen(source: [8: [4, 8, 3, 1]])
-    let result2 = try XCTUnwrap(Roller("4d8 - 3", dieGen: dieGen2)).eval()
+    let result2 = try Roller("4d8 - 3", dieGen: dieGen2).eval()
 
     let expectedRolls = [
       Roll(result: 4, die: 8),
@@ -595,10 +595,10 @@ final class RollerTests: XCTestCase {
 
   func testMultiplicationRoll() throws {
     let dieGen1 = TestRollGen.gen(source: [8: [4]])
-    let result1 = try XCTUnwrap(Roller("10 * 1d8", dieGen: dieGen1)).eval()
+    let result1 = try Roller("10 * 1d8", dieGen: dieGen1).eval()
 
     let dieGen2 = TestRollGen.gen(source: [8: [4]])
-    let result2 = try XCTUnwrap(Roller("1d8 * 10", dieGen: dieGen2)).eval()
+    let result2 = try Roller("1d8 * 10", dieGen: dieGen2).eval()
 
     let expectedRolls = [
       Roll(result: 4, die: 8),
@@ -614,7 +614,7 @@ final class RollerTests: XCTestCase {
 
   func testOperatorPrecedenceRoll() throws {
     let dieGen = TestRollGen.gen(source: [8: [4], 6: [2, 5]])
-    let result = try XCTUnwrap(Roller("1d8 + 7 - 2d6 * 3", dieGen: dieGen)).eval()
+    let result = try Roller("1d8 + 7 - 2d6 * 3", dieGen: dieGen).eval()
 
     let expectedRolls = [
       Roll(result: 4, die: 8),
@@ -629,7 +629,7 @@ final class RollerTests: XCTestCase {
 
   func testOperatorPrecedenceWithParensRoll() throws {
     let dieGen = TestRollGen.gen(source: [8: [4], 6: [2, 5]])
-    let result = try XCTUnwrap(Roller("1d8 + (7 - 2d6 + 3) * 3", dieGen: dieGen)).eval()
+    let result = try Roller("1d8 + (7 - 2d6 + 3) * 3", dieGen: dieGen).eval()
 
     let expectedRolls = [
       Roll(result: 4, die: 8),
@@ -644,7 +644,7 @@ final class RollerTests: XCTestCase {
 
   func testOperatorPrecedenceWithNestedParensRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 9], 8: [4], 6: [2, 5]])
-    let result = try XCTUnwrap(Roller("1d12r1 * (1d8 + (7 - (2d6 + 3))) * 3", dieGen: dieGen)).eval()
+    let result = try Roller("1d12r1 * (1d8 + (7 - (2d6 + 3))) * 3", dieGen: dieGen).eval()
 
     let expectedRolls = [
       Roll(result: 1, die: 12, isDiscarded: true),
@@ -661,7 +661,7 @@ final class RollerTests: XCTestCase {
 
   func testNegativeNumbersRoll() throws {
     let dieGen = TestRollGen.gen(source: [12: [1, 9]])
-    let result = try XCTUnwrap(Roller("-2-2d12--3", dieGen: dieGen)).eval()
+    let result = try Roller("-2-2d12--3", dieGen: dieGen).eval()
 
     let expectedRolls = [
       Roll(result: 1, die: 12),
@@ -675,7 +675,7 @@ final class RollerTests: XCTestCase {
 
   func testComplexRoll() throws {
     let dieGen = TestRollGen.gen(source: [6: [1, 4, 2, 6, 6, 2], 12: [4, 8, 9, 1]])
-    let result = try XCTUnwrap(Roller("4d6kh2x6 - 3d12dl1r9 + 23", dieGen: dieGen)).eval()
+    let result = try Roller("4d6kh2x6 - 3d12dl1r9 + 23", dieGen: dieGen).eval()
 
     XCTAssertEqual(
       result.rolls,

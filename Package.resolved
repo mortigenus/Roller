@@ -11,12 +11,21 @@
         }
       },
       {
+        "package": "swift-case-paths",
+        "repositoryURL": "https://github.com/pointfreeco/swift-case-paths",
+        "state": {
+          "branch": null,
+          "revision": "a09839348486db8866f85a727b8550be1d671c50",
+          "version": "0.9.1"
+        }
+      },
+      {
         "package": "swift-gen",
         "repositoryURL": "https://github.com/pointfreeco/swift-gen.git",
         "state": {
           "branch": null,
-          "revision": "fa11f64f5473d6f37f5f477f2c7929e527589634",
-          "version": "0.3.0"
+          "revision": "5bd20fb662e1ead7ee47df6bb0a15398295f2e06",
+          "version": "0.4.0"
         }
       },
       {
@@ -24,8 +33,17 @@
         "repositoryURL": "https://github.com/pointfreeco/swift-parsing",
         "state": {
           "branch": null,
-          "revision": "69d56291adcaec6bc58553850e13ae7bdfe5c1da",
-          "version": "0.5.0"
+          "revision": "bc92e84968990b41640214b636667f35b6e5d44c",
+          "version": "0.10.0"
+        }
+      },
+      {
+        "package": "xctest-dynamic-overlay",
+        "repositoryURL": "https://github.com/pointfreeco/xctest-dynamic-overlay",
+        "state": {
+          "branch": null,
+          "revision": "ef8e14e7ce1c0c304c644c6ba365d06c468ded6b",
+          "version": "0.3.3"
         }
       }
     ]

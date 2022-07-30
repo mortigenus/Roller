@@ -57,7 +57,7 @@ struct RollerMain: ParsableCommand {
   }
 
   private func printRoll(_ string: String?) {
-    if let string = string, let result = Roller(string)?.eval() {
+    if let string = string, let result = try? Roller(string).eval() {
       print("\(String(reflecting: result))")
     } else {
       print("Something went wrong :sweatsmile:")

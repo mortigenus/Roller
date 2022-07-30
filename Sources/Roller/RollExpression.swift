@@ -18,11 +18,12 @@ public enum RollExpression {
   case roll(RollRequest)
   indirect case operation(Operation, RollExpression, RollExpression)
 
-  public init?(_ string: String) {
+  public init(_ string: String) throws {
     var input = string[...].utf8
-    let parsedExpr = additionAndSubtraction.parse(&input)
-    guard let rollExpr = parsedExpr, input.isEmpty else { return nil }
-    self = rollExpr
+    self = try Parse {
+      additionAndSubtraction
+      End()
+    }.parse(&input)
   }
 }
 
@@ -40,20 +41,16 @@ private extension RollExpression {
   }
 }
 
-private let additionAndSubtraction = InfixOperator(
+private let additionAndSubtraction = InfixOperator(associativity: .left) {
   OneOf {
     Parse(RollExpression.addition) { "+".utf8 }
     Parse(RollExpression.subtraction) { "-".utf8 }
-  },
-  associativity: .left,
-  lowerThan: multiplication
-)
+  }
+} lowerThan: { multiplication }
 
-private let multiplication = InfixOperator(
-  Parse(RollExpression.multiplication) { "*".utf8 },
-  associativity: .left,
-  lowerThan: factor
-)
+private let multiplication = InfixOperator(associativity: .left) {
+  Parse(RollExpression.multiplication) { "*".utf8 }
+} lowerThan: { factor }
 
 private let factor: AnyParser<Substring.UTF8View, RollExpression> =
 OneOf {
@@ -64,73 +61,77 @@ OneOf {
   }
 
   Parse(RollExpression.roll) {
-    Skip(Whitespace())
+    Whitespace()
     RollRequest.parser()
-    Skip(Whitespace())
+    Whitespace()
   }
 
   Parse(RollExpression.number) {
-    Skip(Whitespace())
+    Whitespace()
     Int.parser()
-    Skip(Whitespace())
+    Whitespace()
   }
 }.eraseToAnyParser()
 
 private let symbol = { (symbol: String) in
-  Skip(Whitespace<Substring.UTF8View>()).skip(StartsWith(symbol.utf8)).skip(Whitespace())
+  Parse {
+    Whitespace()
+    StartsWith(symbol.utf8)
+    Whitespace()
+  }
 }
 
-private struct InfixOperator<Operator, Operand>: Parser
+private struct InfixOperator<Operator: Parser, Operand: Parser>: Parser
 where
-Operator: Parser,
-Operand: Parser,
 Operator.Input == Operand.Input,
 Operator.Output == (Operand.Output, Operand.Output) -> Operand.Output
 {
-  let `associativity`: Associativity
-  let operand: Operand
-  let `operator`: Operator
+  public let `associativity`: Associativity
+  public let operand: Operand
+  public let `operator`: Operator
 
   @inlinable
-  init(
-    _ operator: Operator,
+  public init(
     associativity: Associativity,
-    lowerThan operand: Operand
+    @ParserBuilder _ operator: () -> Operator,
+    @ParserBuilder lowerThan operand: () -> Operand  // Should this be called `precedes operand:`?
   ) {
     self.associativity = `associativity`
-    self.operand = operand
-    self.operator = `operator`
+    self.operand = operand()
+    self.operator = `operator`()
   }
 
   @inlinable
-  func parse(_ input: inout Operand.Input) -> Operand.Output? {
+  public func parse(_ input: inout Operand.Input) rethrows -> Operand.Output {
     switch associativity {
     case .left:
-      guard var lhs = self.operand.parse(&input) else { return nil }
+      var lhs = try self.operand.parse(&input)
       var rest = input
-      while let operation = self.operator.parse(&input),
-            let rhs = self.operand.parse(&input)
-      {
-        rest = input
-        lhs = operation(lhs, rhs)
+      while true {
+        do {
+          let operation = try self.operator.parse(&input)
+          let rhs = try self.operand.parse(&input)
+          rest = input
+          lhs = operation(lhs, rhs)
+        } catch {
+          input = rest
+          return lhs
+        }
       }
-      input = rest
-      return lhs
     case .right:
       var lhs: [(Operand.Output, Operator.Output)] = []
       while true {
-        guard let rhs = self.operand.parse(&input)
-        else { break }
-        guard let operation = self.operator.parse(&input)
-        else {
+        let rhs = try self.operand.parse(&input)
+        do {
+          let operation = try self.operator.parse(&input)
+          lhs.append((rhs, operation))
+        } catch {
           return lhs.reversed().reduce(rhs) { rhs, pair in
             let (lhs, operation) = pair
             return operation(lhs, rhs)
           }
         }
-        lhs.append((rhs, operation))
       }
-      return nil
     }
   }
 }
